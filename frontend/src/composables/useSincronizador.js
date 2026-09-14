@@ -7,6 +7,13 @@ import { ENDPOINTS } from '@/composables/useMovimientoStock'
 export const pendientesEnCola = ref(0)
 export const sincronizando = ref(false)
 
+/**
+ * Marca de tiempo del último movimiento confirmado por el servidor. Las
+ * vistas la observan para recargar el stock: tras vaciar la cola, lo que
+ * hay en pantalla ya no coincide con el backend.
+ */
+export const ultimaSincronizacion = ref(0)
+
 async function actualizarContador() {
   pendientesEnCola.value = await db.cola_movimientos.where('estado').equals('pendiente').count()
 }
@@ -39,6 +46,7 @@ export async function sincronizar() {
       try {
         await apiClient.post(ENDPOINTS[item.tipo], item.payload)
         await db.cola_movimientos.delete(item.id)
+        ultimaSincronizacion.value = Date.now()
       } catch (error) {
         if (esErrorDeRed(error)) {
           // Seguimos offline (o el backend cayó a mitad de la sync):

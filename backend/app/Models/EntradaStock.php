@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class EntradaStock extends Model
 {
@@ -45,5 +46,15 @@ class EntradaStock extends Model
     public function movimientosStock(): HasMany
     {
         return $this->hasMany(MovimientoStock::class);
+    }
+
+    /**
+     * Movimiento de compra que originó el lote. Permite saber a quién se
+     * atribuyó la compra sin duplicar el dato en la propia entrada.
+     */
+    public function movimientoCompra(): HasOne
+    {
+        return $this->hasOne(MovimientoStock::class)
+            ->where('tipo', MovimientoStock::TIPO_COMPRA);
     }
 }

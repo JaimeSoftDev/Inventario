@@ -1,5 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -8,6 +9,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   plugins: [
     vue(),
+    tailwindcss(),
     VitePWA({
       // No se activa la nueva versión sola a media acción del usuario: se
       // le avisa (ver ActualizacionDisponible.vue) y decide cuándo recargar.
@@ -20,8 +22,8 @@ export default defineConfig({
         name: 'Inventario Doméstico',
         short_name: 'Inventario',
         description: 'Gestiona el stock, las compras y los consumos del hogar, incluso sin conexión.',
-        theme_color: '#1f6f5c',
-        background_color: '#1f6f5c',
+        theme_color: '#f5ead8',
+        background_color: '#f5ead8',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -32,8 +34,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Precachea el app shell (JS/CSS/HTML) generado por el build.
-        globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+        // Precachea el app shell (JS/CSS/HTML) y las fuentes empaquetadas:
+        // van en el bundle, no en un CDN, para que la tipografía siga
+        // siendo la correcta sin conexión.
+        globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
         runtimeCaching: [
           {
             // Catálogo de productos: se muestra lo cacheado al instante y

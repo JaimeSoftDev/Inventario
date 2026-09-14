@@ -79,4 +79,36 @@ class ProductoTest extends TestCase
         $response->assertJsonPath('stock_total', 5.5);
         $response->assertJsonCount(2, 'entradas');
     }
+
+    public function test_el_listado_expone_la_proxima_caducidad_y_los_lotes_vivos(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $producto = Producto::factory()->create();
+
+        // Solo cuentan las entradas con stock: la agotada no debe marcar la
+        // caducidad del producto ni sumar como lote.
+        EntradaStock::factory()->create([
+            'producto_id' => $producto->id,
+            'cantidad_restante' => 0,
+            'fecha_caducidad' => now()->addDay()->toDateString(),
+        ]);
+        EntradaStock::factory()->create([
+            'producto_id' => $producto->id,
+            'cantidad_restante' => 4,
+            'fecha_caducidad' => now()->addDays(9)->toDateString(),
+        ]);
+        EntradaStock::factory()->create([
+            'producto_id' => $producto->id,
+            'cantidad_restante' => 1,
+            'fecha_caducidad' => now()->addDays(5)->toDateString(),
+        ]);
+
+        $response = $this->getJson('/api/productos');
+
+        $response->assertOk();
+        $response->assertJsonPath('data.0.proxima_caducidad', now()->addDays(5)->toDateString());
+        $response->assertJsonPath('data.0.lotes', 2);
+        $response->assertJsonPath('data.0.stock_actual', 5);
+    }
 }

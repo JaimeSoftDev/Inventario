@@ -22,6 +22,13 @@ class EntradaStockResource extends JsonResource
             'precio_unitario' => $this->precio_unitario !== null ? (float) $this->precio_unitario : null,
             'abierto' => (bool) $this->abierto,
             'nota' => $this->nota,
+            // Quién trajo este lote a casa (del movimiento de compra que lo creó).
+            'anadido_por' => $this->whenLoaded('movimientoCompra', fn () => $this->movimientoCompra?->usuarioAtribuido
+                ? [
+                    'id' => $this->movimientoCompra->usuarioAtribuido->id,
+                    'nombre' => $this->movimientoCompra->usuarioAtribuido->name,
+                ]
+                : null),
         ];
     }
 }

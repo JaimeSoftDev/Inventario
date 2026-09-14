@@ -1,86 +1,49 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import ActualizacionDisponible from '@/components/ActualizacionDisponible.vue'
-import IndicadorConexion from '@/components/IndicadorConexion.vue'
+import AppToast from '@/components/AppToast.vue'
+import BottomNav from '@/components/BottomNav.vue'
+import SplashArranque from '@/components/SplashArranque.vue'
+import { useConexion } from '@/composables/useConexion'
+import { db } from '@/db/dexie'
 
-const auth = useAuthStore()
 const route = useRoute()
-const mostrarNav = computed(() => !route.meta.publica)
+const { enLinea } = useConexion()
+
+const arrancando = ref(true)
+const fechaDatos = ref(null)
+
+onMounted(async () => {
+  try {
+    // Abrir IndexedDB es lo único que bloquea el primer pintado: hasta que
+    // no está lista no sabemos si hay datos cacheados que mostrar sin red.
+    await db.open()
+    const cacheados = await db.productos_cache.count()
+    if (cacheados > 0) {
+      fechaDatos.value = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+    }
+  } catch {
+    // Sin IndexedDB (ventana privada) la app sigue funcionando con red.
+  } finally {
+    arrancando.value = false
+  }
+})
+
+const mostrarNav = computed(() => route.meta.nav !== false)
 </script>
 
 <template>
-  <div class="app-shell">
-    <header v-if="mostrarNav" class="app-header">
-      <nav class="app-nav">
-        <RouterLink to="/">Productos</RouterLink>
-        <RouterLink to="/compra">Comprar</RouterLink>
-        <RouterLink to="/consumo">Consumir</RouterLink>
-        <RouterLink to="/movimientos">Movimientos</RouterLink>
-      </nav>
-      <div class="app-header__usuario">
-        <IndicadorConexion />
-        <span v-if="auth.usuario">{{ auth.usuario.name }}</span>
-        <button type="button" @click="auth.logout()">Salir</button>
-      </div>
-    </header>
+  <SplashArranque v-if="arrancando" :en-linea="enLinea" :fecha-datos="fechaDatos" />
 
-    <main class="app-main">
+  <div v-else class="flex min-h-dvh flex-col">
+    <main class="flex-1">
       <RouterView />
     </main>
 
-    <ActualizacionDisponible />
+    <BottomNav v-if="mostrarNav" />
   </div>
+
+  <AppToast />
+  <ActualizacionDisponible />
 </template>
-
-<style scoped>
-.app-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.app-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e2e2e2;
-}
-
-.app-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.app-nav a {
-  text-decoration: none;
-  font-weight: 600;
-  color: inherit;
-  opacity: 0.7;
-}
-
-.app-nav a.router-link-active {
-  opacity: 1;
-  text-decoration: underline;
-}
-
-.app-header__usuario {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.app-main {
-  flex: 1;
-  padding: 1rem;
-  max-width: 720px;
-  margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box;
-}
-</style>

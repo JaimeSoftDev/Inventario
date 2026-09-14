@@ -14,10 +14,21 @@ class StockInsuficienteException extends Exception
         public readonly float $solicitado,
         public readonly float $disponible,
     ) {
+        // El mensaje lo lee una persona en el móvil (a veces al resolver un
+        // conflicto de la cola offline), así que concuerda en número.
         parent::__construct(sprintf(
-            'Stock insuficiente: se solicitaron %s unidades pero solo hay %s disponibles.',
-            rtrim(rtrim(number_format($solicitado, 3, '.', ''), '0'), '.'),
-            rtrim(rtrim(number_format($disponible, 3, '.', ''), '0'), '.'),
+            'Stock insuficiente: %s %s pero solo %s %s.',
+            $solicitado == 1 ? 'se pidió' : 'se pidieron',
+            self::cantidad($solicitado, 'unidad', 'unidades'),
+            $disponible == 1 ? 'queda' : 'quedan',
+            self::cantidad($disponible, 'unidad', 'unidades'),
         ));
+    }
+
+    private static function cantidad(float $valor, string $singular, string $plural): string
+    {
+        $formateada = rtrim(rtrim(number_format($valor, 3, '.', ''), '0'), '.');
+
+        return $formateada.' '.($valor == 1 ? $singular : $plural);
     }
 }

@@ -1,52 +1,126 @@
-:root {
-  color-scheme: light dark;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
+@import 'tailwindcss';
+
+/* Tipografías empaquetadas (no CDN) para que la PWA conserve la identidad
+   visual sin conexión. Caprasimo para títulos y cifras; Figtree para el
+   resto, con eje variable de peso (400 texto, 700 producto, 800 etiquetas). */
+@import '@fontsource/caprasimo/400.css';
+@import '@fontsource-variable/figtree/wght.css';
+
+@theme {
+  /* --- Paleta base --------------------------------------------------- */
+  --color-fondo: #f5ead8;
+  --color-superficie: #ebddc5;
+  --color-tinta: #201e1d;
+  /* Superficie de tarjeta: algo más clara que el fondo para que las filas
+     se despeguen sin recurrir a bordes. */
+  --color-tarjeta: #fdfaf4;
+
+  /* Acento terracota: acción principal y urgencia. */
+  --color-acento-50: #fdf4ee;
+  --color-acento-100: #fae4d5;
+  --color-acento-200: #f3c6a8;
+  --color-acento-300: #e8a476;
+  --color-acento-400: #d98a52;
+  --color-acento-500: #c67139;
+  --color-acento-600: #ab5c2c;
+  --color-acento-700: #8a4723;
+  --color-acento-800: #6b3720;
+  --color-acento-900: #4a2617;
+
+  /* Acento oliva: estado saludable, "en stock". */
+  --color-oliva-50: #f4f6ef;
+  --color-oliva-100: #e6ead9;
+  --color-oliva-200: #ccd6b6;
+  --color-oliva-300: #adbb8d;
+  --color-oliva-400: #94a473;
+  --color-oliva-500: #7a8a5e;
+  --color-oliva-600: #62704a;
+  --color-oliva-700: #4c583b;
+  --color-oliva-800: #3a442e;
+  --color-oliva-900: #272d1f;
+
+  /* Neutros cálidos derivados del fondo, no grises puros. */
+  --color-arena-50: #faf4e9;
+  --color-arena-100: #f5ead8;
+  --color-arena-200: #ebddc5;
+  --color-arena-300: #d9c7a9;
+  --color-arena-400: #b9a588;
+  --color-arena-500: #92806a;
+  --color-arena-600: #6f6152;
+  --color-arena-700: #4f453b;
+  --color-arena-800: #332d27;
+  --color-arena-900: #201e1d;
+
+  /* --- Tipografía ---------------------------------------------------- */
+  --font-display: 'Caprasimo', Georgia, serif;
+  --font-sans: 'Figtree Variable', 'Figtree', system-ui, sans-serif;
+
+  /* --- Radios -------------------------------------------------------- */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+
+  /* --- Sombras tintadas al fondo cálido (nunca negro puro) ----------- */
+  --shadow-sm: 0 1px 2px rgba(74, 38, 23, 0.06);
+  --shadow-md: 0 4px 14px rgba(74, 38, 23, 0.08);
+  --shadow-lg: 0 12px 32px rgba(74, 38, 23, 0.12);
 }
 
-* {
-  box-sizing: border-box;
+@layer base {
+  html {
+    background: var(--color-fondo);
+    /* Evita el rebote elástico que rompe la sensación de app instalada. */
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-fondo);
+    color: var(--color-tinta);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    /* Sin resaltado azul al tocar: la app usa sus propios estados. */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
 }
 
-body {
-  margin: 0;
+@utility etiqueta-seccion {
+  /* Etiqueta de sección: Figtree 11/800, versalitas espaciadas. La familia
+     es explícita porque muchas van en <h2>, que por defecto usa Caprasimo. */
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-arena-500);
 }
 
-button {
-  font: inherit;
-  cursor: pointer;
-}
-
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-.card {
-  border: 1px solid #e2e2e2;
-  border-radius: 0.5rem;
-  padding: 1rem;
-}
-
-.form-grupo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 0.75rem;
-}
-
-.form-acciones {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.mensaje-error {
-  color: #b00020;
-}
-
-.mensaje-info {
-  opacity: 0.75;
-  font-size: 0.9rem;
+/* El teclado del móvil no debe hacer zoom en los inputs. */
+@media (max-width: 480px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

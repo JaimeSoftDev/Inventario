@@ -19,6 +19,16 @@ class ProductoController extends Controller
         return ProductoResource::collection(
             Producto::with(['categoria', 'unidadMedida', 'ubicacionPorDefecto'])
                 ->withSum('entradasStock as stock_actual', 'cantidad_restante')
+                // La próxima caducidad y el número de lotes vivos se agregan
+                // en la propia consulta: el listado los pinta en cada fila y
+                // resolverlos por producto sería un N+1.
+                ->withMin(
+                    ['entradasStock as proxima_caducidad' => fn ($query) => $query->where('cantidad_restante', '>', 0)],
+                    'fecha_caducidad'
+                )
+                ->withCount(
+                    ['entradasStock as lotes' => fn ($query) => $query->where('cantidad_restante', '>', 0)]
+                )
                 ->orderBy('nombre')
                 ->get()
         );
@@ -35,7 +45,14 @@ class ProductoController extends Controller
     public function show(Producto $producto): ProductoResource
     {
         $producto->loadMissing(['categoria', 'unidadMedida', 'ubicacionPorDefecto'])
-            ->loadSum('entradasStock as stock_actual', 'cantidad_restante');
+            ->loadSum('entradasStock as stock_actual', 'cantidad_restante')
+            ->loadMin(
+                ['entradasStock as proxima_caducidad' => fn ($query) => $query->where('cantidad_restante', '>', 0)],
+                'fecha_caducidad'
+            )
+            ->loadCount(
+                ['entradasStock as lotes' => fn ($query) => $query->where('cantidad_restante', '>', 0)]
+            );
 
         return ProductoResource::make($producto);
     }
@@ -61,7 +78,7 @@ class ProductoController extends Controller
     public function stock(Producto $producto): JsonResponse
     {
         $entradas = $producto->entradasStock()
-            ->with('ubicacion')
+            ->with(['ubicacion', 'movimientoCompra.usuarioAtribuido'])
             ->where('cantidad_restante', '>', 0)
             ->orderByDesc('abierto')
             ->orderBy('fecha_caducidad')

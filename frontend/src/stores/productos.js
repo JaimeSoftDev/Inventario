@@ -48,5 +48,17 @@ export const useProductosStore = defineStore('productos', () => {
     return data.data
   }
 
-  return { productos, cargando, error, cargar, cargarDesdeCache, crear }
+  /**
+   * Corrige el stock en pantalla sin esperar al servidor. Lo usan las
+   * acciones de un toque (stepper y gesto): la fila debe reaccionar al
+   * instante aunque el movimiento acabe en la cola offline.
+   */
+  function ajustarStockLocal(productoId, delta) {
+    const producto = productos.value.find((item) => item.id === productoId)
+    if (!producto) return
+
+    producto.stock_actual = Math.max(0, Number((Number(producto.stock_actual ?? 0) + delta).toFixed(3)))
+  }
+
+  return { productos, cargando, error, cargar, cargarDesdeCache, crear, ajustarStockLocal }
 })

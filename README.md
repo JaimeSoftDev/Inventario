@@ -53,6 +53,16 @@ prueba (contraseña `password`):
 - `ana@example.com` — puede atribuir movimientos a otros usuarios.
 - `luis@example.com` — solo puede atribuirse movimientos a sí mismo.
 
+### Datos de demostración
+
+Para ver la app poblada (cuatro miembros del hogar, productos con
+caducidad inminente, stock bajo, varios lotes y movimientos atribuidos a
+terceros):
+
+```bash
+php artisan migrate:fresh --seed --seeder="Database\Seeders\DemoSeeder"
+```
+
 ### Tests
 
 ```bash
@@ -106,6 +116,45 @@ npm run dev
 npm run build
 npm run preview
 ```
+
+### Sistema de diseño
+
+La interfaz sigue un sistema propio, definido como tokens de Tailwind v4 en
+`src/style.css` (`@theme`) y materializado en componentes reutilizables:
+
+- **Paleta**: fondo `#f5ead8`, superficie `#ebddc5`, tinta `#201e1d`,
+  acento terracota `#c67139` (acción y urgencia) y oliva `#7a8a5e` (estado
+  saludable), cada uno con su rampa 100–900.
+- **Tipografía**: Caprasimo para títulos y cifras, Figtree para el resto
+  (400 texto, 700 nombre de producto, 800 etiquetas de sección). Van
+  empaquetadas con la app, no desde un CDN, para que la identidad se
+  mantenga sin conexión.
+- **Regla de accesibilidad**: un estado nunca se comunica solo con color;
+  siempre franja + icono + texto. Los objetivos táctiles miden 44px.
+- **Componentes** (`src/components`): `ProductCard`, `MemberChip`,
+  `StatusStripe`, `EstadoChip`, `QtyStepper`, `OfflineBanner`,
+  `MovementRow`, `BottomSheet`, `FiltroChips`, `SelectorMiembro`.
+
+Lenguaje visual del offline, repetido en toda la app: **discontinuo** =
+guardado en local y aún sin confirmar; **terracota sólido** = conflicto que
+necesita una decisión humana.
+
+### Pantallas
+
+- **Stock**: lo urgente primero (caduca en ≤3 días o por debajo del
+  mínimo), luego agrupado por ubicación. Cada fila lleva su stepper, y
+  arrastrarla a la izquierda consume 1 a nombre del usuario actual (con
+  aviso y opción de deshacer); arrastrando más se abre la hoja para elegir
+  cantidad y persona.
+- **Ficha de producto**: stock total, próxima caducidad y desglose por
+  lotes en el mismo orden en que los consumirá FEFO.
+- **Hojas de consumo y de alta de stock**: selector "a nombre de",
+  cantidad con atajos, caducidad con atajos y ubicación.
+- **Histórico**: agrupado por día, distinguiendo a quién se atribuye
+  (avatar sólido) de quién lo registró (avatar discontinuo, solo si
+  difiere).
+- **Cola de sincronización**: separa lo que solo espera red de lo que
+  necesita revisión, con las acciones para resolverlo.
 
 ### Arquitectura
 

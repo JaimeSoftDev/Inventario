@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------
+# Reparto de tráfico en producción (Hostinger / LiteSpeed)
+#
+#   /api/*  -> laravel.php, que arranca la API desde fuera de public_html
+#   resto   -> ficheros del build de la PWA, con index.html como respaldo
+#
+# Destino: ~/domains/jaimesoftdev.com/public_html/.htaccess
+#
+# Cada <IfModule> es deliberado: si el módulo no estuviera disponible, la
+# directiva suelta devolvería un error 500 en toda la web en lugar de
+# ignorarse sin más.
+# ---------------------------------------------------------------------------
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Sanctum autentica con bearer tokens. Muchos hostings compartidos no
+    # propagan la cabecera Authorization a PHP y, sin esta regla, la API
+    # respondería 401 a todo aunque el token sea correcto.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # La API. La URL original (/api/productos) se conserva, así que las
+    # rutas de Laravel, que ya llevan el prefijo "api", siguen casando.
+    RewriteRule ^api(/.*)?$ laravel.php [L]
+
+    # La PWA: si el fichero existe se sirve tal cual (assets, sw.js, iconos);
+    # si no, se entrega index.html para que el router de Vue resuelva rutas
+    # como /historico cuando se entra directamente por URL o se recarga.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # Ni el service worker ni el HTML de entrada pueden cachearse: si se
+    # quedan pegados, los usuarios no reciben ninguna actualización y la app
+    # se congela en la versión que tuvieran instalada.
+    <FilesMatch "^(index\.html|sw\.js|workbox-.*\.js|manifest\.webmanifest)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+    # Los assets del build llevan un hash en el nombre: cuando cambian,
+    # cambia el nombre, así que pueden cachearse indefinidamente.
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>

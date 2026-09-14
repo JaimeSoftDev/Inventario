@@ -26,9 +26,12 @@ export const useProductosStore = defineStore('productos', () => {
 
     try {
       const { data } = await apiClient.get('/productos')
+      // Se usa data.data (plano) en vez de productos.value: al asignarlo al
+      // ref, Vue lo envuelve en un Proxy reactivo que IndexedDB no puede
+      // clonar (DataCloneError).
       productos.value = data.data
       await db.productos_cache.clear()
-      await db.productos_cache.bulkPut(productos.value)
+      await db.productos_cache.bulkPut(data.data)
     } catch (e) {
       if (productos.value.length === 0) {
         error.value = 'No se pudo cargar el catálogo de productos y no hay datos en caché.'

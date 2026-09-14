@@ -20,9 +20,12 @@ export const useUsuariosStore = defineStore('usuarios', () => {
     cargando.value = true
     try {
       const { data } = await apiClient.get('/usuarios')
+      // Se usa data.data (plano) en vez de usuarios.value: al asignarlo al
+      // ref, Vue lo envuelve en un Proxy reactivo que IndexedDB no puede
+      // clonar (DataCloneError).
       usuarios.value = data.data
       await db.usuarios_cache.clear()
-      await db.usuarios_cache.bulkPut(usuarios.value)
+      await db.usuarios_cache.bulkPut(data.data)
     } catch (error) {
       // Sin red o backend caído: servimos lo último que tengamos cacheado.
       await cargarDesdeCache()

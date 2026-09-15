@@ -60,6 +60,7 @@ class DemoSeeder extends Seeder
             ['nombre' => 'Gramo', 'abreviatura' => 'g'],
             ['nombre' => 'Litro', 'abreviatura' => 'L'],
             ['nombre' => 'Paquete', 'abreviatura' => 'packs'],
+            ['nombre' => 'Lata', 'abreviatura' => 'latas'],
         ])->mapWithKeys(fn (array $datos) => [$datos['abreviatura'] => UnidadMedida::create($datos)]);
 
         $categorias = collect(['Lácteos', 'Limpieza', 'Despensa', 'Huevos'])
@@ -119,10 +120,12 @@ class DemoSeeder extends Seeder
             'stock_minimo' => 1,
         ]);
 
+        // En latas, que es como se guardan de verdad y además deja la unidad
+        // a la vista en la demo en lugar de solo en el catálogo.
         $garbanzos = Producto::create([
             'nombre' => 'Garbanzos',
             'categoria_id' => $categorias['Despensa']->id,
-            'unidad_medida_id' => $unidades['packs']->id,
+            'unidad_medida_id' => $unidades['latas']->id,
             'ubicacion_por_defecto_id' => $ubicaciones['Despensa']->id,
             'stock_minimo' => 1,
         ]);

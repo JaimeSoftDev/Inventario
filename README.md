@@ -149,7 +149,10 @@ necesita una decisión humana.
 - **Ficha de producto**: stock total, próxima caducidad y desglose por
   lotes en el mismo orden en que los consumirá FEFO.
 - **Hojas de consumo y de alta de stock**: selector "a nombre de",
-  cantidad con atajos, caducidad con atajos y ubicación.
+  cantidad con atajos, caducidad con atajos y ubicación. La cifra de
+  cantidad se ajusta con los botones ±, pero también se teclea: al
+  enfocarla se selecciona entera, admite coma decimal y avisa por texto
+  cuando lo escrito supera el stock disponible.
 - **Histórico**: agrupado por día, distinguiendo a quién se atribuye
   (avatar sólido) de quién lo registró (avatar discontinuo, solo si
   difiere).

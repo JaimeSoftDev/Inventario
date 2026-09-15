@@ -149,14 +149,23 @@ const CLASE_CAMPO =
       <div class="mt-5 grid grid-cols-2 gap-3">
         <label class="block">
           <span class="etiqueta-seccion">Stock mínimo</span>
-          <input v-model.number="form.stock_minimo" type="number" min="0" step="1" :class="CLASE_CAMPO" />
+          <input
+            v-model.number="form.stock_minimo"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="any"
+            :class="CLASE_CAMPO"
+          />
         </label>
         <label class="block">
           <span class="etiqueta-seccion">Caduca en (días)</span>
           <input
             v-model.number="form.dias_caducidad_por_defecto"
             type="number"
+            inputmode="numeric"
             min="0"
+            step="1"
             :class="CLASE_CAMPO"
             placeholder="—"
           />

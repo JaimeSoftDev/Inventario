@@ -103,16 +103,28 @@ se pueden dar de alta productos. Este paso crea lo mínimo:
 php artisan tinker --execute="
 \App\Models\User::create([
   'name' => 'Jaime',
-  'email' => 'jaime@jaimesoftdev.com',
-  'password' => \Illuminate\Support\Facades\Hash::make('CAMBIA_ESTA_PASSWORD'),
+  'email' => 'jaimesoftdev@gmail.com',
+  'password' => \Illuminate\Support\Facades\Hash::make('password'),
   'puede_atribuir_a_otros' => true,
 ]);
 foreach (['Nevera','Despensa','Congelador','Baño'] as \$n) {
   \App\Models\Ubicacion::create(['nombre' => \$n]);
 }
-foreach ([['Unidad','uds'],['Kilogramo','kg'],['Litro','L'],['Paquete','packs'],['Gramo','g'],['Brik','briks']] as [\$n,\$a]) {
+foreach ([['Unidad','uds'],['Kilogramo','kg'],['Litro','L'],['Paquete','packs'],['Gramo','g'],['Brik','briks'],['Lata','latas']] as [\$n,\$a]) {
   \App\Models\UnidadMedida::create(['nombre' => \$n, 'abreviatura' => \$a]);
 }
+echo 'listo';
+"
+```
+
+La contraseña queda como `password`. Es cómoda para arrancar, pero cualquiera
+que dé con el dominio puede entrar: cámbiala en cuanto la app tenga datos
+reales, desde tinker.
+
+```bash
+php artisan tinker --execute="
+\App\Models\User::where('email','jaimesoftdev@gmail.com')
+  ->update(['password' => \Illuminate\Support\Facades\Hash::make('LA_NUEVA')]);
 echo 'listo';
 "
 ```
@@ -134,7 +146,7 @@ Comprueba que responde:
 ```bash
 curl -s https://jaimesoftdev.com/api/login -X POST \
   -H "Content-Type: application/json" -H "Accept: application/json" \
-  -d '{"email":"jaime@jaimesoftdev.com","password":"CAMBIA_ESTA_PASSWORD"}'
+  -d '{"email":"jaimesoftdev@gmail.com","password":"password"}'
 ```
 
 Debe devolver un JSON con `token`. Ver más abajo si no es así.

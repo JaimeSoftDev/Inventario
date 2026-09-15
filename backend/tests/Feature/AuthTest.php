@@ -114,6 +114,45 @@ class AuthTest extends TestCase
             ->assertJsonPath('message', 'Indica tu usuario o tu correo.');
     }
 
+    public function test_un_nombre_con_tilde_entra_con_su_tilde(): void
+    {
+        User::factory()->create(['name' => 'Álex', 'password' => Hash::make('secreto123')]);
+
+        $this->postJson('/api/login', [
+            'identificador' => 'Álex',
+            'password' => 'secreto123',
+        ])->assertOk();
+    }
+
+    public function test_un_nombre_con_tilde_entra_tambien_sin_ella(): void
+    {
+        User::factory()->create(['name' => 'Álvaro', 'password' => Hash::make('secreto123')]);
+
+        // "alvaro" en el móvil se teclea mucho antes que buscar la Á.
+        $this->postJson('/api/login', [
+            'identificador' => 'alvaro',
+            'password' => 'secreto123',
+        ])->assertOk();
+    }
+
+    public function test_el_nombre_exacto_gana_al_parecido_sin_tildes(): void
+    {
+        User::factory()->create(['name' => 'Martí', 'password' => Hash::make('conTilde')]);
+        User::factory()->create(['name' => 'Marti', 'password' => Hash::make('sinTilde')]);
+
+        // Quien escribe su nombre tal cual entra en su cuenta, no en la del
+        // vecino de al lado en la tabla.
+        $this->postJson('/api/login', [
+            'identificador' => 'Martí',
+            'password' => 'conTilde',
+        ])->assertOk()->assertJsonPath('usuario.name', 'Martí');
+
+        $this->postJson('/api/login', [
+            'identificador' => 'Marti',
+            'password' => 'sinTilde',
+        ])->assertOk()->assertJsonPath('usuario.name', 'Marti');
+    }
+
     public function test_rutas_protegidas_requieren_autenticacion(): void
     {
         $this->getJson('/api/productos')->assertUnauthorized();

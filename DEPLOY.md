@@ -133,6 +133,10 @@ Para el resto de la casa, repite el `User::create`. Deja
 `puede_atribuir_a_otros` fuera (o en `false`) si esa persona solo debe poder
 registrar movimientos a su nombre.
 
+El `name` es también el identificador de acceso —se entra con el nombre o
+con el correo, indistintamente—, así que **no puede repetirse** entre
+miembros. La base de datos lo impide con un índice único.
+
 ## 4. Publicar la API
 
 ```bash
@@ -146,7 +150,7 @@ Comprueba que responde:
 ```bash
 curl -s https://jaimesoftdev.com/api/login -X POST \
   -H "Content-Type: application/json" -H "Accept: application/json" \
-  -d '{"email":"jaimesoftdev@gmail.com","password":"password"}'
+  -d '{"identificador":"Jaime","password":"password"}'
 ```
 
 Debe devolver un JSON con `token`. Ver más abajo si no es así.
@@ -215,6 +219,17 @@ a veces ocultan los ficheros que empiezan por punto.
 **Todo responde 401 aunque la contraseña sea correcta**
 El servidor está descartando la cabecera `Authorization`. Es justo lo que
 evita la primera regla del `.htaccess`; verifica que esa parte llegó entera.
+
+**`migrate` falla diciendo que hay nombres repetidos**
+El nombre pasó a ser el identificador de acceso y dos miembros lo
+comparten. La propia migración dice cuáles: renómbralos y vuelve a migrar.
+
+```bash
+php artisan tinker --execute="
+\App\Models\User::where('email','elque@toque.com')->update(['name' => 'Nombre único']);
+echo 'listo';
+"
+```
 
 **Error 500 al entrar**
 Mira `~/inventario/backend/storage/logs/laravel.log`. Lo más habitual es que

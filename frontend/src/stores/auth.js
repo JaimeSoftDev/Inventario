@@ -23,9 +23,10 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('auth_usuario')
   }
 
-  async function login(email, password) {
+  /** `identificador` es el nombre del miembro o su correo, indistintamente. */
+  async function login(identificador, password) {
     const { data } = await apiClient.post('/login', {
-      email,
+      identificador,
       password,
       device_name: 'pwa',
     })

@@ -56,6 +56,8 @@ tres miembros. **La contraseña de cada uno es su propio nombre**:
 | Antonio | `antonio@example.com` | `Antonio` | no |
 | Samuel | `samuel@example.com` | `Samuel` | no |
 
+Para entrar vale cualquiera de las dos columnas: el nombre o el correo.
+
 Que dos de los tres no puedan atribuir no es un descuido: es lo que
 permite comprobar el 403 del servicio y que el gesto de "a nombre de otro"
 no se ofrezca a quien no tiene el permiso.
@@ -99,7 +101,12 @@ sobre el mismo producto no descuadran el stock.
   403).
 - Autenticación con **Sanctum** (bearer tokens, sin cookies de sesión):
   `POST /api/login` devuelve un token que el frontend guarda y envía como
-  `Authorization: Bearer …`.
+  `Authorization: Bearer …`. El campo `identificador` admite **el nombre
+  del miembro o su correo**, sin distinguir mayúsculas: en el móvil
+  teclear "Jaime" es mejor que teclear un correo, y el nombre ya es la
+  identidad del miembro en toda la interfaz. Por eso `users.name` es
+  único. Se sigue aceptando el campo `email` que envían las PWA ya
+  instaladas.
 
 ## Frontend (Vue 3 + Vite, PWA)
 

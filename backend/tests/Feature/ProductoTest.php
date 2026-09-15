@@ -38,6 +38,83 @@ class ProductoTest extends TestCase
         $this->assertDatabaseHas('productos', ['nombre' => 'Leche entera']);
     }
 
+    public function test_el_precio_de_referencia_se_guarda_y_se_devuelve(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $response = $this->postJson('/api/productos', [
+            'nombre' => 'Aceite de oliva',
+            'unidad_medida_id' => UnidadMedida::factory()->create()->id,
+            'precio_referencia' => 8.45,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.precio_referencia', 8.45);
+
+        $this->assertEquals(8.45, Producto::where('nombre', 'Aceite de oliva')->firstOrFail()->precio_referencia);
+    }
+
+    public function test_un_producto_puede_no_tener_precio(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        // Sin precio no es lo mismo que gratis: tiene que llegar como null
+        // para que la interfaz pueda omitirlo en vez de pintar "0 €".
+        $response = $this->postJson('/api/productos', [
+            'nombre' => 'Queso curado',
+            'unidad_medida_id' => UnidadMedida::factory()->create()->id,
+            'precio_referencia' => null,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.precio_referencia', null);
+    }
+
+    public function test_un_precio_negativo_no_se_admite(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson('/api/productos', [
+            'nombre' => 'Imposible',
+            'unidad_medida_id' => UnidadMedida::factory()->create()->id,
+            'precio_referencia' => -3,
+        ])->assertStatus(422)->assertJsonValidationErrors('precio_referencia');
+    }
+
+    public function test_cada_lote_guarda_el_precio_de_su_compra(): void
+    {
+        $usuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $producto = Producto::factory()->create(['precio_referencia' => 0.95]);
+        $ubicacion = Ubicacion::factory()->create();
+
+        // Dos compras del mismo producto a precios distintos: es lo que
+        // justifica guardarlo por lote y no solo en la ficha.
+        foreach ([0.89, 0.99] as $precio) {
+            $this->postJson('/api/movimientos/compra', [
+                'producto_id' => $producto->id,
+                'ubicacion_id' => $ubicacion->id,
+                'cantidad' => 2,
+                'precio_unitario' => $precio,
+                'usuario_atribuido_id' => $usuario->id,
+            ])->assertCreated();
+        }
+
+        $precios = EntradaStock::where('producto_id', $producto->id)
+            ->orderBy('id')
+            ->pluck('precio_unitario')
+            ->map(fn ($p) => (float) $p)
+            ->all();
+
+        $this->assertSame([0.89, 0.99], $precios);
+
+        // Y la ficha los expone para poder pintarlos.
+        $this->getJson("/api/productos/{$producto->id}/stock")
+            ->assertOk()
+            ->assertJsonPath('entradas.0.precio_unitario', 0.89);
+    }
+
     public function test_registro_de_compra_con_caducidad_crea_entrada_de_stock(): void
     {
         $usuario = User::factory()->create();

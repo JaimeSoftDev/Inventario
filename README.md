@@ -163,7 +163,25 @@ necesita una decisión humana.
   para resolverlo con un solo toque más. El gesto derecho no aparece para
   quien no tiene `puede_atribuir_a_otros`, porque acabaría en un 403.
 - **Ficha de producto**: stock total, próxima caducidad y desglose por
-  lotes en el mismo orden en que los consumirá FEFO.
+  lotes en el mismo orden en que los consumirá FEFO. Cada lote enseña lo
+  que costó esa compra, y la cabecera el valor de lo que queda.
+
+### Precios
+
+El producto lleva un **precio de referencia** (lo que suele costar una
+unidad) y cada lote guarda el **precio real de su compra**: dos briks del
+mismo producto pueden haber costado 0,89 € y 0,99 €, y el valor de la
+despensa sale de sumar cada lote por lo suyo, no de estimar.
+
+La hoja de alta de stock propone el precio de referencia y calcula el
+total mientras escribes, para cuadrarlo con el ticket. El histórico
+muestra el importe solo en las compras: en un consumo el precio del lote
+no es un gasto de hoy, y enseñarlo ahí invitaría a sumarlo dos veces.
+
+Un producto sin precio anotado **no es un producto gratis**, así que el
+campo viaja como `null` y la interfaz lo omite en lugar de pintar 0 €. La
+columna es `decimal(12,2)`, que no llega a un precio por gramo (28 €/kg
+serían 0,028 €/g): para productos al peso conviene dejarlo vacío.
 - **Hojas de consumo y de alta de stock**: selector "a nombre de",
   cantidad con atajos, caducidad con atajos y ubicación. La cifra de
   cantidad se ajusta con los botones ±, pero también se teclea: al

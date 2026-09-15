@@ -4,7 +4,7 @@ import AppButton from '@/components/AppButton.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import EstadoChip from '@/components/EstadoChip.vue'
 import MemberChip from '@/components/MemberChip.vue'
-import { formateaCantidad } from '@/composables/useEstadoProducto'
+import { formateaCantidad, formateaPrecio, importeDe } from '@/composables/useEstadoProducto'
 
 /**
  * Fila del histórico de movimientos.
@@ -52,6 +52,17 @@ const hora = computed(() => {
 const cantidadLegible = computed(
   () => `${vista.value.signo}${formateaCantidad(Math.abs(Number(props.movimiento.cantidad ?? 0)))}`,
 )
+
+/**
+ * Lo que costó el movimiento. Solo tiene sentido en las compras: en un
+ * consumo el precio del lote no es un gasto de hoy, y enseñarlo ahí
+ * invitaría a sumarlo dos veces.
+ */
+const importe = computed(() => {
+  if (props.movimiento.tipo !== 'compra') return null
+
+  return formateaPrecio(importeDe(props.movimiento.cantidad, props.movimiento.precio_unitario))
+})
 </script>
 
 <template>
@@ -78,10 +89,11 @@ const cantidadLegible = computed(
             {{ movimiento.producto?.nombre }}
           </p>
           <span
-            class="shrink-0 text-[13px] tabular-nums"
+            class="shrink-0 text-right text-[13px] tabular-nums"
             :class="esError ? 'text-acento-100' : 'text-arena-500'"
           >
             {{ hora }}
+            <span v-if="importe" class="block font-bold text-arena-600">{{ importe }}</span>
           </span>
         </div>
 

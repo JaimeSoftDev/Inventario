@@ -12,7 +12,7 @@ import StatusStripe from '@/components/StatusStripe.vue'
 import apiClient from '@/api/client'
 import { db } from '@/db/dexie'
 import { useColaOffline } from '@/composables/useColaOffline'
-import { diasHasta, estadoDe, formateaCantidad, formateaDias, unidadPara } from '@/composables/useEstadoProducto'
+import { diasHasta, estadoDe, formateaCantidad, formateaDias, formateaPrecio, importeDe, unidadPara } from '@/composables/useEstadoProducto'
 import { useProductosStore } from '@/stores/productos'
 
 /**
@@ -80,8 +80,42 @@ const subtitulo = computed(() => {
   if (Number(producto.value.stock_minimo) > 0) {
     partes.push(`mínimo ${formateaCantidad(producto.value.stock_minimo)}`)
   }
+
+  const precio = formateaPrecio(producto.value.precio_referencia)
+  if (precio) partes.push(`${precio}/${unidadPara(1, unidad.value)}`)
+
   return partes.filter(Boolean).join(' · ')
 })
+
+/**
+ * Lo que vale lo que queda, sumando cada lote por lo que costó de verdad.
+ * Los lotes sin precio anotado no se cuentan, así que solo se enseña si
+ * todos lo tienen: un total a medias engaña más de lo que informa.
+ */
+const valorDelStock = computed(() => {
+  if (!lotes.value.length) return null
+  if (lotes.value.some((lote) => lote.precio_unitario === null)) return null
+
+  const total = lotes.value.reduce(
+    (suma, lote) => suma + importeDe(lote.cantidad_restante, lote.precio_unitario),
+    0,
+  )
+
+  return formateaPrecio(total)
+})
+
+function precioDeLote(lote) {
+  const unitario = formateaPrecio(lote.precio_unitario)
+  if (!unitario) return null
+
+  const porUnidad = `${unitario}/${unidadPara(1, unidad.value)}`
+
+  // De un lote de uno, el total y el precio unitario son el mismo número:
+  // escribirlo dos veces es ruido.
+  if (Number(lote.cantidad_restante) === 1) return porUnidad
+
+  return `${formateaPrecio(importeDe(lote.cantidad_restante, lote.precio_unitario))} · ${porUnidad}`
+}
 
 const proximaCaducidad = computed(() => diasHasta(producto.value?.proxima_caducidad))
 
@@ -176,6 +210,10 @@ function alRegistrar() {
             texto="Por encima del mínimo"
             class="mt-3"
           />
+
+          <p v-if="valorDelStock" class="mt-2.5 text-[13px] text-arena-600">
+            Valor en despensa: <span class="font-bold tabular-nums">{{ valorDelStock }}</span>
+          </p>
         </div>
 
         <div
@@ -217,12 +255,19 @@ function alRegistrar() {
             <StatusStripe :tono="estadoLote(lote).tono" />
 
             <div class="flex items-start justify-between gap-3">
-              <p class="flex items-baseline gap-1.5">
-                <span class="font-display text-[22px] leading-none">
-                  {{ formateaCantidad(lote.cantidad_restante) }}
-                </span>
-                <span class="text-[13px] text-arena-600">{{ unidadPara(lote.cantidad_restante, unidad) }}</span>
-              </p>
+              <div class="min-w-0">
+                <p class="flex items-baseline gap-1.5">
+                  <span class="font-display text-[22px] leading-none">
+                    {{ formateaCantidad(lote.cantidad_restante) }}
+                  </span>
+                  <span class="text-[13px] text-arena-600">{{ unidadPara(lote.cantidad_restante, unidad) }}</span>
+                </p>
+                <!-- Cada lote guarda lo que costó esa compra: dos lotes del
+                     mismo producto pueden haber costado cosas distintas. -->
+                <p v-if="precioDeLote(lote)" class="mt-1 text-[12px] tabular-nums text-arena-500">
+                  {{ precioDeLote(lote) }}
+                </p>
+              </div>
 
               <EstadoChip
                 :tono="estadoLote(lote).tono"

@@ -64,6 +64,9 @@ function comoMovimiento(item) {
     atribuido_a: null,
     registrado_por: null,
     nota: item.payload.nota ?? null,
+    // Una compra encolada ya sabe lo que costó: el importe se ve igual
+    // que si estuviera sincronizada.
+    precio_unitario: item.payload.precio_unitario ?? null,
     created_at: new Date(item.creado_en).toISOString(),
   }
 }

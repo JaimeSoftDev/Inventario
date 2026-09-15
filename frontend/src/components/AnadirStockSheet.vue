@@ -5,7 +5,7 @@ import AppIcon from '@/components/AppIcon.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
 import QtyStepper from '@/components/QtyStepper.vue'
 import SelectorMiembro from '@/components/SelectorMiembro.vue'
-import { formateaCantidad, unidadPara } from '@/composables/useEstadoProducto'
+import { formateaCantidad, formateaPrecio, importeDe, unidadPara } from '@/composables/useEstadoProducto'
 import { useMovimientoStock } from '@/composables/useMovimientoStock'
 import { mostrarToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
@@ -26,6 +26,7 @@ const catalogos = useCatalogosStore()
 const { registrarCompra } = useMovimientoStock()
 
 const cantidad = ref(1)
+const precioUnitario = ref('')
 const ubicacionId = ref(null)
 const fechaCaducidad = ref('')
 const compradoPor = ref(null)
@@ -44,6 +45,9 @@ watch(
     cantidad.value = 1
     error.value = null
     compradoPor.value = auth.usuario?.id ?? null
+    // Se propone lo que suele costar; si esta vez costó otra cosa, se
+    // corrige aquí y el lote guarda el precio real de esta compra.
+    precioUnitario.value = producto.precio_referencia ?? ''
     ubicacionId.value = producto.ubicacion_por_defecto?.id ?? catalogos.ubicaciones[0]?.id ?? null
 
     // Si el producto declara una caducidad típica, se propone ya resuelta.
@@ -55,6 +59,13 @@ watch(
 
 const abierta = computed(() => props.producto !== null)
 const unidad = computed(() => props.producto?.unidad_medida?.abreviatura ?? 'uds')
+
+/** Lo que cuesta la compra entera, para comprobarlo contra el ticket. */
+const importe = computed(() =>
+  formateaPrecio(
+    importeDe(cantidad.value, precioUnitario.value === '' ? null : precioUnitario.value),
+  ),
+)
 
 function enDias(dias) {
   const fecha = new Date()
@@ -98,6 +109,7 @@ async function confirmar() {
       ubicacion_id: ubicacionId.value,
       cantidad: cantidad.value,
       fecha_caducidad: fechaCaducidad.value || null,
+      precio_unitario: precioUnitario.value === '' ? null : precioUnitario.value,
       usuario_atribuido_id: compradoPor.value,
     })
 
@@ -141,6 +153,33 @@ async function confirmar() {
           <h3 class="etiqueta-seccion">Cantidad</h3>
           <div class="mt-2.5 rounded-lg bg-tarjeta px-6 py-4">
             <QtyStepper v-model="cantidad" :unidad="unidad" :min="1" tamano="lg" />
+          </div>
+        </section>
+
+        <section class="mt-6">
+          <div class="flex items-baseline justify-between gap-3">
+            <h3 class="etiqueta-seccion">Precio por {{ unidadPara(1, unidad) }}</h3>
+            <!-- El total sale solo: sirve para cuadrarlo con el ticket sin
+                 tener que multiplicar de cabeza. -->
+            <span v-if="importe" class="font-display text-[15px] tabular-nums">{{ importe }}</span>
+          </div>
+
+          <div class="relative mt-2.5">
+            <input
+              v-model.number="precioUnitario"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="—"
+              :aria-label="`Precio por ${unidadPara(1, unidad)}`"
+              class="sin-flechas w-full rounded-md border border-arena-300 bg-arena-50 px-4 py-3.5 pr-10 outline-none placeholder:text-arena-400 focus:border-acento-400"
+            />
+            <span
+              class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[15px] font-bold text-arena-500"
+            >
+              €
+            </span>
           </div>
         </section>
 

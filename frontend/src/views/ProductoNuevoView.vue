@@ -23,6 +23,7 @@ const form = reactive({
   ubicacion_por_defecto_id: '',
   stock_minimo: 0,
   dias_caducidad_por_defecto: '',
+  precio_referencia: '',
 })
 
 const enviando = ref(false)
@@ -45,6 +46,8 @@ async function enviar() {
       categoria_id: form.categoria_id || null,
       ubicacion_por_defecto_id: form.ubicacion_por_defecto_id || null,
       dias_caducidad_por_defecto: form.dias_caducidad_por_defecto || null,
+      // Vacío no es cero: un producto sin precio anotado no es gratis.
+      precio_referencia: form.precio_referencia === '' ? null : form.precio_referencia,
     })
     router.replace({ name: 'producto', params: { id: producto.id } })
   } catch (e) {
@@ -146,7 +149,29 @@ const CLASE_CAMPO =
         </div>
       </section>
 
-      <div class="mt-5 grid grid-cols-2 gap-3">
+      <label class="mt-5 block">
+        <span class="etiqueta-seccion">Precio de referencia</span>
+        <!-- Lo que suele costar una unidad. Se propone al registrar una
+             compra, donde se puede ajustar a lo que costó esa vez. -->
+        <div class="relative">
+          <input
+            v-model.number="form.precio_referencia"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.01"
+            placeholder="—"
+            :class="[CLASE_CAMPO, 'sin-flechas pr-10']"
+          />
+          <span
+            class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[15px] font-bold text-arena-500"
+          >
+            €
+          </span>
+        </div>
+      </label>
+
+      <div class="mt-4 grid grid-cols-2 gap-3">
         <label class="block">
           <span class="etiqueta-seccion">Stock mínimo</span>
           <input
@@ -155,7 +180,7 @@ const CLASE_CAMPO =
             inputmode="decimal"
             min="0"
             step="any"
-            :class="CLASE_CAMPO"
+            :class="[CLASE_CAMPO, 'sin-flechas']"
           />
         </label>
         <label class="block">
@@ -166,7 +191,7 @@ const CLASE_CAMPO =
             inputmode="numeric"
             min="0"
             step="1"
-            :class="CLASE_CAMPO"
+            :class="[CLASE_CAMPO, 'sin-flechas']"
             placeholder="—"
           />
         </label>

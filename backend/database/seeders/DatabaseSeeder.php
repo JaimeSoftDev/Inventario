@@ -69,6 +69,7 @@ class DatabaseSeeder extends Seeder
             'ubicacion_por_defecto_id' => $ubicaciones['Nevera']->id,
             'stock_minimo' => 4,
             'dias_caducidad_por_defecto' => 14,
+            'precio_referencia' => 0.45,
         ]);
 
         $leche = Producto::create([
@@ -79,6 +80,7 @@ class DatabaseSeeder extends Seeder
             'ubicacion_por_defecto_id' => $ubicaciones['Nevera']->id,
             'stock_minimo' => 4,
             'dias_caducidad_por_defecto' => 20,
+            'precio_referencia' => 0.95,
         ]);
 
         $detergente = Producto::create([
@@ -87,8 +89,12 @@ class DatabaseSeeder extends Seeder
             'unidad_medida_id' => $unidades['L']->id,
             'ubicacion_por_defecto_id' => $ubicaciones['Baño']->id,
             'stock_minimo' => 2,
+            'precio_referencia' => 4.50,
         ]);
 
+        // Sin precio a propósito: se mide en gramos y decimal(12,2) no
+        // llega a un precio por gramo (28 €/kg serían 0,028 €/g). Deja
+        // además a la vista cómo se ve un producto sin precio anotado.
         $queso = Producto::create([
             'nombre' => 'Queso curado',
             'categoria_id' => $categorias['Lácteos']->id,
@@ -105,6 +111,7 @@ class DatabaseSeeder extends Seeder
             'ubicacion_por_defecto_id' => $ubicaciones['Nevera']->id,
             'stock_minimo' => 6,
             'dias_caducidad_por_defecto' => 21,
+            'precio_referencia' => 0.28,
         ]);
 
         $arroz = Producto::create([
@@ -113,6 +120,7 @@ class DatabaseSeeder extends Seeder
             'unidad_medida_id' => $unidades['packs']->id,
             'ubicacion_por_defecto_id' => $ubicaciones['Despensa']->id,
             'stock_minimo' => 1,
+            'precio_referencia' => 1.15,
         ]);
 
         // En latas, que es como se guardan de verdad y además deja esa
@@ -123,20 +131,21 @@ class DatabaseSeeder extends Seeder
             'unidad_medida_id' => $unidades['latas']->id,
             'ubicacion_por_defecto_id' => $ubicaciones['Despensa']->id,
             'stock_minimo' => 1,
+            'precio_referencia' => 0.85,
         ]);
 
         // --- Lotes con su compra correspondiente -------------------------
-        $this->lote($yogur, $ubicaciones['Nevera'], 8, $jaime, dias: 2, comprado: 4);
+        $this->lote($yogur, $ubicaciones['Nevera'], 8, $jaime, dias: 2, comprado: 4, precio: 0.45);
         // Leche repartida en dos lotes: uno urgente y otro holgado. Es el
         // caso que justifica FEFO y el desglose por lotes de la ficha.
-        $this->lote($leche, $ubicaciones['Nevera'], 1, $antonio, dias: 2, comprado: 5);
-        $this->lote($leche, $ubicaciones['Nevera'], 1, $jaime, dias: 20, comprado: 2);
-        $this->lote($detergente, $ubicaciones['Baño'], 1, $samuel, dias: null, comprado: 12);
+        $this->lote($leche, $ubicaciones['Nevera'], 1, $antonio, dias: 2, comprado: 5, precio: 0.89);
+        $this->lote($leche, $ubicaciones['Nevera'], 1, $jaime, dias: 20, comprado: 2, precio: 0.99);
+        $this->lote($detergente, $ubicaciones['Baño'], 1, $samuel, dias: null, comprado: 12, precio: 4.50);
         $this->lote($queso, $ubicaciones['Nevera'], 150, $jaime, dias: 12, comprado: 6);
         $this->lote($queso, $ubicaciones['Nevera'], 100, $antonio, dias: 26, comprado: 1);
-        $this->lote($huevos, $ubicaciones['Nevera'], 11, $antonio, dias: 9, comprado: 3);
-        $this->lote($arroz, $ubicaciones['Despensa'], 2, $jaime, dias: null, comprado: 30);
-        $this->lote($garbanzos, $ubicaciones['Despensa'], 9, $samuel, dias: null, comprado: 9);
+        $this->lote($huevos, $ubicaciones['Nevera'], 11, $antonio, dias: 9, comprado: 3, precio: 0.28);
+        $this->lote($arroz, $ubicaciones['Despensa'], 2, $jaime, dias: null, comprado: 30, precio: 1.15);
+        $this->lote($garbanzos, $ubicaciones['Despensa'], 9, $samuel, dias: null, comprado: 9, precio: 0.85);
 
         // --- Movimientos de ejemplo --------------------------------------
         // Jaime registra un consumo a nombre de Samuel: el caso que
@@ -174,6 +183,7 @@ class DatabaseSeeder extends Seeder
         User $comprador,
         ?int $dias,
         int $comprado,
+        ?float $precio = null,
     ): void {
         $entrada = EntradaStock::create([
             'producto_id' => $producto->id,
@@ -181,6 +191,7 @@ class DatabaseSeeder extends Seeder
             'cantidad_restante' => $cantidad,
             'fecha_compra' => now()->subDays($comprado)->toDateString(),
             'fecha_caducidad' => $dias === null ? null : now()->addDays($dias)->toDateString(),
+            'precio_unitario' => $precio,
             'abierto' => false,
         ]);
 
@@ -189,6 +200,7 @@ class DatabaseSeeder extends Seeder
             'entrada_stock_id' => $entrada->id,
             'tipo' => MovimientoStock::TIPO_COMPRA,
             'cantidad' => $cantidad,
+            'precio_unitario' => $precio,
             'ubicacion_destino_id' => $ubicacion->id,
             'usuario_registrador_id' => $comprador->id,
             'usuario_atribuido_id' => $comprador->id,

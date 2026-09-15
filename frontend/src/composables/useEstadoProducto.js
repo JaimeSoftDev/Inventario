@@ -89,3 +89,32 @@ export function formateaCantidad(valor) {
   if (Number.isNaN(numero)) return '0'
   return Number.isInteger(numero) ? String(numero) : String(Number(numero.toFixed(3)))
 }
+
+/**
+ * Importes en euros con formato español (1.234,50 €).
+ *
+ * Devuelve null cuando no hay precio, para que quien lo pinte pueda
+ * omitir el dato en vez de escribir "0 €", que significa otra cosa: un
+ * producto sin precio anotado no es un producto gratis.
+ */
+const FORMATO_EUROS = new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR',
+})
+
+export function formateaPrecio(valor) {
+  if (valor === null || valor === undefined || valor === '') return null
+
+  const numero = Number(valor)
+
+  return Number.isFinite(numero) ? FORMATO_EUROS.format(numero) : null
+}
+
+/** Lo que cuesta una cantidad a un precio unitario. Null si falta alguno. */
+export function importeDe(cantidad, precioUnitario) {
+  if (precioUnitario === null || precioUnitario === undefined) return null
+
+  const total = Number(cantidad) * Number(precioUnitario)
+
+  return Number.isFinite(total) ? total : null
+}

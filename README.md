@@ -142,10 +142,13 @@ necesita una decisión humana.
 ### Pantallas
 
 - **Stock**: lo urgente primero (caduca en ≤3 días o por debajo del
-  mínimo), luego agrupado por ubicación. Cada fila lleva su stepper, y
-  arrastrarla a la izquierda consume 1 a nombre del usuario actual (con
-  aviso y opción de deshacer); arrastrando más se abre la hoja para elegir
-  cantidad y persona.
+  mínimo), luego agrupado por ubicación. Cada fila lleva su stepper, y se
+  arrastra en las dos direcciones: a la **izquierda** consume 1 a nombre
+  del usuario actual (con aviso y opción de deshacer), y arrastrando más
+  se abre la hoja para elegir cantidad y persona; a la **derecha** consume
+  1 a nombre de otro miembro, convirtiendo la fila en una tira de avatares
+  para resolverlo con un solo toque más. El gesto derecho no aparece para
+  quien no tiene `puede_atribuir_a_otros`, porque acabaría en un 403.
 - **Ficha de producto**: stock total, próxima caducidad y desglose por
   lotes en el mismo orden en que los consumirá FEFO.
 - **Hojas de consumo y de alta de stock**: selector "a nombre de",

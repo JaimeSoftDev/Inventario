@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import EstadoChip from '@/components/EstadoChip.vue'
 import MemberChip from '@/components/MemberChip.vue'
@@ -11,16 +11,26 @@ import { estadoDe, formateaCantidad, unidadPara } from '@/composables/useEstadoP
  * chip de urgencia → cantidad → stepper. El stepper vive aquí dentro para
  * que consumir una unidad sea un solo toque.
  *
- * Gesto: arrastrar a la izquierda consume 1 a nombre del miembro
- * preseleccionado; arrastrar más abre la hoja para elegir cantidad/persona.
+ * Gestos, ambos consumen una unidad y se diferencian solo en a quién se
+ * atribuye:
+ *  - izquierda: a nombre del usuario actual, sin más pasos. Arrastrando
+ *    más se abre la hoja para elegir cantidad y persona.
+ *  - derecha: a nombre de otro miembro. Al soltar, la fila se convierte en
+ *    una tira de miembros y basta un toque. Es deslizar + tocar, en lugar
+ *    de abrir la hoja y confirmar.
+ *
+ * El gesto derecho no existe para quien no puede atribuir a otros: sin el
+ * permiso la petición acabaría en 403, así que no se ofrece.
  */
 const props = defineProps({
   producto: { type: Object, required: true },
   usuarioActual: { type: Object, default: null },
   pendientes: { type: Number, default: 0 },
+  miembros: { type: Array, default: () => [] },
+  puedeAtribuir: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['consumir', 'anadir', 'abrir', 'abrir-hoja'])
+const emit = defineEmits(['consumir', 'consumir-por', 'anadir', 'abrir', 'abrir-hoja'])
 
 const UMBRAL_CONSUMO = 72
 const UMBRAL_HOJA = 168
@@ -37,11 +47,24 @@ const detalle = computed(() => {
   return ubicacion.value
 })
 
+/**
+ * Solo el resto del hogar: para uno mismo ya está el gesto izquierdo, y
+ * repetirse aquí robaría sitio a los que de verdad hacen falta.
+ */
+const otrosMiembros = computed(() =>
+  props.miembros.filter((miembro) => miembro.id !== props.usuarioActual?.id),
+)
+
+const hayGestoDerecha = computed(
+  () => props.puedeAtribuir && otrosMiembros.value.length > 0 && !sinStock.value,
+)
+
 /** Movimiento a partir del cual dejamos de considerarlo un toque. */
 const UMBRAL_GESTO = 8
 
 const desplazamiento = ref(0)
 const arrastrando = ref(false)
+const eligiendo = ref(false)
 let inicioX = 0
 let inicioY = 0
 let punteroId = null
@@ -80,22 +103,37 @@ function alMover(evento) {
   }
 
   huboGesto = true
-  // Solo hacia la izquierda: hacia la derecha no hay acción asociada.
-  desplazamiento.value = Math.min(0, Math.max(deltaX, -UMBRAL_HOJA - 40))
+
+  if (deltaX < 0) {
+    desplazamiento.value = Math.max(deltaX, -UMBRAL_HOJA - 40)
+  } else {
+    // Hacia la derecha la fila no se despega si no hay a quién atribuir:
+    // el gesto se traga sin hacer nada en vez de prometer una acción que
+    // luego no existe.
+    desplazamiento.value = hayGestoDerecha.value
+      ? Math.min(deltaX, UMBRAL_CONSUMO + 40)
+      : 0
+  }
 }
 
 function alSoltar(evento) {
   if (!arrastrando.value || evento.pointerId !== punteroId) return
 
-  const recorrido = Math.abs(desplazamiento.value)
+  const recorrido = desplazamiento.value
   arrastrando.value = false
   desplazamiento.value = 0
   evento.currentTarget.releasePointerCapture?.(punteroId)
   punteroId = null
 
-  if (recorrido >= UMBRAL_HOJA) {
+  if (recorrido > 0) {
+    if (recorrido >= UMBRAL_CONSUMO && hayGestoDerecha.value) eligiendo.value = true
+    return
+  }
+
+  const izquierda = Math.abs(recorrido)
+  if (izquierda >= UMBRAL_HOJA) {
     emit('abrir-hoja')
-  } else if (recorrido >= UMBRAL_CONSUMO && !sinStock.value) {
+  } else if (izquierda >= UMBRAL_CONSUMO && !sinStock.value) {
     emit('consumir', 1)
   }
 }
@@ -109,16 +147,52 @@ function alAbrir() {
   emit('abrir')
 }
 
+function elegir(miembro) {
+  eligiendo.value = false
+  emit('consumir-por', miembro)
+}
+
+// Tocar en cualquier otro sitio cancela: es lo que se espera de algo que
+// aparece encima de la lista, y evita dejar varias filas abiertas.
+const raiz = ref(null)
+
+function alTocarFuera(evento) {
+  if (!raiz.value?.contains(evento.target)) eligiendo.value = false
+}
+
+watch(eligiendo, (activo) => {
+  if (activo) document.addEventListener('pointerdown', alTocarFuera, true)
+  else document.removeEventListener('pointerdown', alTocarFuera, true)
+})
+
+onBeforeUnmount(() => document.removeEventListener('pointerdown', alTocarFuera, true))
+
 const intensidadGesto = computed(() =>
   Math.min(1, Math.abs(desplazamiento.value) / UMBRAL_CONSUMO),
 )
-const gestoAbreHoja = computed(() => Math.abs(desplazamiento.value) >= UMBRAL_HOJA)
+const gestoAbreHoja = computed(() => desplazamiento.value <= -UMBRAL_HOJA)
+const gestoAtribuye = computed(() => desplazamiento.value > 0)
 </script>
 
 <template>
-  <div class="relative overflow-hidden rounded-md">
-    <!-- Lo que el gesto revela debajo de la fila. -->
+  <div ref="raiz" class="relative overflow-hidden rounded-md">
+    <!-- Lo que el gesto revela debajo de la fila. Izquierda: consumo a tu
+         nombre. Derecha: consumo a nombre de otro. -->
     <div
+      v-if="gestoAtribuye"
+      class="absolute inset-0 flex items-center gap-2 rounded-md bg-tinta pl-5 text-fondo"
+      :style="{ opacity: intensidadGesto }"
+      aria-hidden="true"
+    >
+      <!-- Solo se ve lo que el dedo ha destapado, así que el texto tiene
+           que caber en esos pocos píxeles: el icono de personas es quien
+           distingue este gesto del de la izquierda, y la tira que aparece
+           al soltar ya lo dice con todas las letras. -->
+      <AppIcon name="personas" :size="18" />
+      <span class="font-display text-[18px] whitespace-nowrap">−1</span>
+    </div>
+    <div
+      v-else
       class="absolute inset-0 flex items-center justify-end gap-3 rounded-md bg-acento-500 pr-5 text-fondo"
       :style="{ opacity: intensidadGesto }"
       aria-hidden="true"
@@ -130,7 +204,46 @@ const gestoAbreHoja = computed(() => Math.abs(desplazamiento.value) >= UMBRAL_HO
       </span>
     </div>
 
+    <!-- Tira de miembros: el paso que sustituye a abrir la hoja entera. -->
     <div
+      v-if="eligiendo"
+      class="relative rounded-md bg-tinta px-4 py-2.5 text-fondo shadow-sm"
+    >
+      <div class="flex items-center justify-between gap-3">
+        <p class="text-[11px] font-bold tracking-[0.08em] text-fondo/70 uppercase">
+          −1 {{ producto.nombre }} · a nombre de
+        </p>
+        <button
+          type="button"
+          class="-mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-fondo/70"
+          aria-label="Cancelar"
+          @click="eligiendo = false"
+        >
+          <AppIcon name="cerrar" :size="16" />
+        </button>
+      </div>
+
+      <!-- Píldoras en crema, no sobre el oscuro: algunos avatares del
+           hogar son de tono oscuro y sobre la barra desaparecían. -->
+      <div class="mt-1.5 flex gap-2 overflow-x-auto pb-0.5">
+        <button
+          v-for="miembro in otrosMiembros"
+          :key="miembro.id"
+          type="button"
+          class="flex h-10 shrink-0 items-center gap-2 rounded-full bg-fondo pr-3.5 pl-1 text-tinta transition active:scale-95"
+          :aria-label="`Consumir 1 de ${producto.nombre} a nombre de ${miembro.name}`"
+          @click="elegir(miembro)"
+        >
+          <MemberChip :usuario="miembro" tamano="md" />
+          <span class="text-[14px] font-bold whitespace-nowrap">
+            {{ miembro.name.split(' ')[0] }}
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-else
       class="relative flex touch-pan-y items-center gap-3 rounded-md py-3 pr-3 pl-4 shadow-sm"
       :class="[
         estado.requiereAccion ? 'bg-acento-100' : 'bg-tarjeta',

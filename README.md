@@ -192,9 +192,13 @@ necesita una decisión humana.
   offline); un fallo de red sí se reintenta en la siguiente sincronización.
 - **PWA** (`vite-plugin-pwa`, `registerType: 'prompt'`): manifest con
   iconos 192/512 normales y maskable; `/api/productos` en
-  StaleWhileRevalidate, `/api/usuarios` en CacheFirst, y los `POST` de
-  `/api/movimientos/*` en NetworkOnly (la cola offline la gestiona Dexie,
-  no Workbox).
+  StaleWhileRevalidate, `/api/usuarios` también (cambia poco, pero cuando
+  entra alguien nuevo en el hogar hay que verlo ya, no al día siguiente), y
+  los `POST` de `/api/movimientos/*` en NetworkOnly (la cola offline la
+  gestiona Dexie, no Workbox). La app comprueba si hay versión nueva cada
+  hora, al volver a primer plano y al recuperar la conexión: una PWA
+  instalada se reanuda en lugar de recargarse, y el navegador solo mira al
+  cargar de cero.
 
 ## Fuera de alcance
 

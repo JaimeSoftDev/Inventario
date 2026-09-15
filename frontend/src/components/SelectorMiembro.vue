@@ -22,7 +22,14 @@ const emit = defineEmits(['update:modelValue'])
 const auth = useAuthStore()
 const usuariosStore = useUsuariosStore()
 
-const VISIBLES = 4
+/**
+ * Cuántos miembros se pintan antes de plegar el resto tras un "+N más".
+ * El tope venía del mockup, que tenía cuatro personas; en un hogar de diez
+ * escondía a seis, que es justo lo contrario de lo que hace falta aquí.
+ * La hoja ya tiene scroll propio, así que caben todos sin romper nada, y
+ * el plegado queda solo como salvaguarda para un número absurdo.
+ */
+const VISIBLES = 12
 const mostrarTodos = ref(false)
 
 onMounted(async () => {

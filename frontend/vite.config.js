@@ -47,14 +47,16 @@ export default defineConfig({
             options: { cacheName: 'api-productos' },
           },
           {
-            // Usuarios del hogar: cambia poco, se sirve de caché mientras
-            // sea posible.
+            // Usuarios del hogar. Cambia poco, pero cuando cambia hay que
+            // verlo: es la lista de personas a las que se atribuye un
+            // consumo, y alguien recién dado de alta no puede tardar un
+            // día en aparecer. Con CacheFirst pasaba justo eso.
+            // Igual que /api/productos: instantáneo desde caché y
+            // refrescado por detrás. Sin red, el fallback es Dexie
+            // (stores/usuarios.js), no Workbox.
             urlPattern: ({ url }) => url.pathname === '/api/usuarios',
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'api-usuarios',
-              expiration: { maxAgeSeconds: 60 * 60 * 24 },
-            },
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'api-usuarios' },
           },
           {
             // Los POST de movimientos (compra/consumo/corrección) nunca se

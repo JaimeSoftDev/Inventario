@@ -47,21 +47,27 @@ php artisan migrate --seed
 php artisan serve
 ```
 
-Esto deja la API en `http://localhost:8000/api` y crea dos usuarios de
-prueba (contraseña `password`):
+Esto deja la API en `http://localhost:8000/api` con un hogar de ejemplo de
+tres miembros. **La contraseña de cada uno es su propio nombre**:
 
-- `ana@example.com` — puede atribuir movimientos a otros usuarios.
-- `luis@example.com` — solo puede atribuirse movimientos a sí mismo.
+| Usuario | Correo | Contraseña | Puede atribuir a otros |
+|---|---|---|---|
+| Jaime | `jaimesoftdev@gmail.com` | `Jaime` | sí |
+| Antonio | `antonio@example.com` | `Antonio` | no |
+| Samuel | `samuel@example.com` | `Samuel` | no |
 
-### Datos de demostración
+Que dos de los tres no puedan atribuir no es un descuido: es lo que
+permite comprobar el 403 del servicio y que el gesto de "a nombre de otro"
+no se ofrezca a quien no tiene el permiso.
 
-Para ver la app poblada (cuatro miembros del hogar, productos con
-caducidad inminente, stock bajo, varios lotes y movimientos atribuidos a
-terceros):
+Los datos cubren todos los estados de la interfaz: caducidad inminente,
+stock bajo, un producto repartido en varios lotes, una corrección de
+recuento y consumos atribuidos a terceros. El catálogo de ubicaciones y
+unidades es el mismo que crea la fase 3 de [DEPLOY.md](DEPLOY.md), para
+que el hogar de desarrollo se parezca al de verdad.
 
-```bash
-php artisan migrate:fresh --seed --seeder="Database\Seeders\DemoSeeder"
-```
+Es solo para desarrollo: `migrate:fresh` tira todas las tablas y estas
+contraseñas son de juguete.
 
 ### Tests
 

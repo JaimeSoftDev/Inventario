@@ -105,8 +105,15 @@ const hidratando = computed(
 const inventarioVacio = computed(() => !hidratando.value && totalProductos.value === 0)
 const hayFiltroActivo = computed(() => filtroUbicacion.value !== null || busqueda.value.trim() !== '')
 
-async function consumirRapido(producto, cantidad) {
-  const usuario = auth.usuario
+const puedeAtribuirAOtros = computed(() => auth.usuario?.puede_atribuir_a_otros === true)
+
+/**
+ * Consumo de un toque. `atribuido` llega del gesto derecho, que permite
+ * apuntárselo a otro miembro sin abrir la hoja; sin él va a nombre de
+ * quien está usando la app, que es el caso frecuente.
+ */
+async function consumirRapido(producto, cantidad, atribuido = null) {
+  const usuario = atribuido ?? auth.usuario
   if (!usuario) return
 
   // Optimista: la fila baja al instante y la cola se encarga del resto.
@@ -246,7 +253,10 @@ function abrirFicha(producto) {
               :producto="producto"
               :usuario-actual="auth.usuario"
               :pendientes="pendientesPorProducto[producto.id] ?? 0"
+              :miembros="usuariosStore.usuarios"
+              :puede-atribuir="puedeAtribuirAOtros"
               @consumir="consumirRapido(producto, $event)"
+              @consumir-por="consumirRapido(producto, 1, $event)"
               @anadir="productoParaAnadir = producto"
               @abrir="abrirFicha(producto)"
               @abrir-hoja="productoEnHoja = producto"
@@ -263,7 +273,10 @@ function abrirFicha(producto) {
               :producto="producto"
               :usuario-actual="auth.usuario"
               :pendientes="pendientesPorProducto[producto.id] ?? 0"
+              :miembros="usuariosStore.usuarios"
+              :puede-atribuir="puedeAtribuirAOtros"
               @consumir="consumirRapido(producto, $event)"
+              @consumir-por="consumirRapido(producto, 1, $event)"
               @anadir="productoParaAnadir = producto"
               @abrir="abrirFicha(producto)"
               @abrir-hoja="productoEnHoja = producto"

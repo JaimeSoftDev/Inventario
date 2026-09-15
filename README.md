@@ -47,21 +47,29 @@ php artisan migrate --seed
 php artisan serve
 ```
 
-Esto deja la API en `http://localhost:8000/api` y crea dos usuarios de
-prueba (contraseña `password`):
+Esto deja la API en `http://localhost:8000/api` con un hogar de ejemplo de
+tres miembros. **La contraseña de cada uno es su propio nombre**:
 
-- `ana@example.com` — puede atribuir movimientos a otros usuarios.
-- `luis@example.com` — solo puede atribuirse movimientos a sí mismo.
+| Usuario | Correo | Contraseña | Puede atribuir a otros |
+|---|---|---|---|
+| Jaime | `jaimesoftdev@gmail.com` | `Jaime` | sí |
+| Antonio | `antonio@example.com` | `Antonio` | no |
+| Samuel | `samuel@example.com` | `Samuel` | no |
 
-### Datos de demostración
+Para entrar vale cualquiera de las dos columnas: el nombre o el correo.
 
-Para ver la app poblada (cuatro miembros del hogar, productos con
-caducidad inminente, stock bajo, varios lotes y movimientos atribuidos a
-terceros):
+Que dos de los tres no puedan atribuir no es un descuido: es lo que
+permite comprobar el 403 del servicio y que el gesto de "a nombre de otro"
+no se ofrezca a quien no tiene el permiso.
 
-```bash
-php artisan migrate:fresh --seed --seeder="Database\Seeders\DemoSeeder"
-```
+Los datos cubren todos los estados de la interfaz: caducidad inminente,
+stock bajo, un producto repartido en varios lotes, una corrección de
+recuento y consumos atribuidos a terceros. El catálogo de ubicaciones y
+unidades es el mismo que crea la fase 3 de [DEPLOY.md](DEPLOY.md), para
+que el hogar de desarrollo se parezca al de verdad.
+
+Es solo para desarrollo: `migrate:fresh` tira todas las tablas y estas
+contraseñas son de juguete.
 
 ### Tests
 
@@ -93,7 +101,12 @@ sobre el mismo producto no descuadran el stock.
   403).
 - Autenticación con **Sanctum** (bearer tokens, sin cookies de sesión):
   `POST /api/login` devuelve un token que el frontend guarda y envía como
-  `Authorization: Bearer …`.
+  `Authorization: Bearer …`. El campo `identificador` admite **el nombre
+  del miembro o su correo**, sin distinguir mayúsculas: en el móvil
+  teclear "Jaime" es mejor que teclear un correo, y el nombre ya es la
+  identidad del miembro en toda la interfaz. Por eso `users.name` es
+  único. Se sigue aceptando el campo `email` que envían las PWA ya
+  instaladas.
 
 ## Frontend (Vue 3 + Vite, PWA)
 
@@ -142,10 +155,13 @@ necesita una decisión humana.
 ### Pantallas
 
 - **Stock**: lo urgente primero (caduca en ≤3 días o por debajo del
-  mínimo), luego agrupado por ubicación. Cada fila lleva su stepper, y
-  arrastrarla a la izquierda consume 1 a nombre del usuario actual (con
-  aviso y opción de deshacer); arrastrando más se abre la hoja para elegir
-  cantidad y persona.
+  mínimo), luego agrupado por ubicación. Cada fila lleva su stepper, y se
+  arrastra en las dos direcciones: a la **izquierda** consume 1 a nombre
+  del usuario actual (con aviso y opción de deshacer), y arrastrando más
+  se abre la hoja para elegir cantidad y persona; a la **derecha** consume
+  1 a nombre de otro miembro, convirtiendo la fila en una tira de avatares
+  para resolverlo con un solo toque más. El gesto derecho no aparece para
+  quien no tiene `puede_atribuir_a_otros`, porque acabaría en un 403.
 - **Ficha de producto**: stock total, próxima caducidad y desglose por
   lotes en el mismo orden en que los consumirá FEFO.
 - **Hojas de consumo y de alta de stock**: selector "a nombre de",

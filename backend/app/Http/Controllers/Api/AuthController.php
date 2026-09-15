@@ -14,18 +14,26 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
-     * Autentica al usuario por email/password y emite un bearer token
+     * Autentica por nombre de miembro **o** correo y emite un bearer token
      * (Sanctum personal access token) para el dispositivo/PWA.
+     *
+     * No se adivina cuál de los dos es: se busca por ambos a la vez. Así un
+     * nombre con pinta de correo, o al revés, no deja a nadie fuera.
      */
     public function login(LoginRequest $request): JsonResponse
     {
         $datos = $request->validated();
+        $identificador = $request->identificador();
 
-        $usuario = User::where('email', $datos['email'])->first();
+        $usuario = User::where('email', $identificador)
+            // El nombre se compara sin distinguir mayúsculas: en el móvil el
+            // teclado capitaliza solo y nadie debería quedarse fuera por eso.
+            ->orWhereRaw('LOWER(name) = ?', [mb_strtolower($identificador)])
+            ->first();
 
         if (! $usuario || ! Hash::check($datos['password'], $usuario->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Las credenciales proporcionadas no son correctas.'],
+                $request->campoIdentificador() => ['Las credenciales proporcionadas no son correctas.'],
             ]);
         }
 

@@ -9,7 +9,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const email = ref('')
+const identificador = ref('')
 const password = ref('')
 const enviando = ref(false)
 const error = ref(null)
@@ -19,7 +19,7 @@ async function enviar() {
   error.value = null
 
   try {
-    await auth.login(email.value, password.value)
+    await auth.login(identificador.value, password.value)
     router.replace(route.query.redirect ?? { name: 'stock' })
   } catch (e) {
     error.value = e.response?.data?.message ?? 'No se pudo iniciar sesión.'
@@ -44,13 +44,21 @@ async function enviar() {
 
     <form class="mt-9" @submit.prevent="enviar">
       <label class="block">
-        <span class="etiqueta-seccion">Email</span>
+        <span class="etiqueta-seccion">Usuario o correo</span>
+        <!-- `text` y no `email`: el navegador rechazaría "Jaime" por no
+             llevar arroba. La capitalización se desactiva porque el nombre
+             se compara sin distinguir mayúsculas y un "Jaime" automático
+             despista sobre lo que hace falta escribir. -->
         <input
-          v-model="email"
-          type="email"
+          v-model="identificador"
+          type="text"
           required
           autocomplete="username"
-          class="mt-2 w-full rounded-md border border-arena-300 bg-arena-50 px-4 py-3.5 outline-none focus:border-acento-400"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+          placeholder="Jaime"
+          class="mt-2 w-full rounded-md border border-arena-300 bg-arena-50 px-4 py-3.5 outline-none placeholder:text-arena-400 focus:border-acento-400"
         />
       </label>
 
